@@ -1,6 +1,7 @@
 from pathlib import Path
-import sys
-from git import Repo, InvalidGitRepositoryError, GitCommandError
+
+from git import GitCommandError, InvalidGitRepositoryError, Repo
+from loguru import logger
 
 
 def update_git(git_repo_url: str, local_dir: Path):
@@ -26,4 +27,4 @@ def update_git(git_repo_url: str, local_dir: Path):
     try:
         origin.pull()
     except GitCommandError as gce:
-        print(f"pull {git_repo_url} 时出现错误, {gce}", file=sys.stderr)
+        logger.error("pull {} 时出现错误, {}", git_repo_url, gce)

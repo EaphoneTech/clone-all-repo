@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from loguru import logger
+
 from ..git_ops import update_git
 
 
@@ -17,8 +19,8 @@ def process(site: dict, dest_folder: Path, verbose: bool = False):
             local_git_folder = dest_folder / local_git_folder_name
 
             if verbose:
-                print(f"git address for coding is: {git_addr}")
-                print(f"local git folder name is : {local_git_folder_name}")
+                logger.debug("git address for coding is: {}", git_addr)
+                logger.debug("local git folder name is : {}", local_git_folder_name)
 
             # do git checkout
             update_git(git_addr, local_git_folder)
