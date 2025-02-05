@@ -1,0 +1,14 @@
+[project]
+name = "clone-all-repo"
+version = "0.1.0"
+description = "Clone all git repos from repos.yaml"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["gitpython>=3.1.44", "pyyaml>=6.0.2", "rich>=13.9.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/car']
