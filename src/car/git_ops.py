@@ -24,6 +24,18 @@ def update_git(git_repo_url: str, local_dir: Path):
         # 已经是 git 目录但是没有 origin, 那么尝试建一个 origin
         origin = repo.create_remote("origin", git_repo_url)
 
+        # 有的时候 origin 没有 master 分支, 要怎么处理?
+        origin.fetch()
+
+        try:
+            # 尝试获取远程的 HEAD 引用
+            remote_head = origin.refs[0]
+            default_branch = remote_head.ref.name.split("/")[-1]
+            # 切换到默认分支
+            repo.git.checkout(default_branch)
+        except Exception:
+            repo.git.checkout("master")
+
     try:
         origin.pull()
     except GitCommandError as gce:
