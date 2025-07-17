@@ -53,8 +53,8 @@ def update_git(git_repo_url: str, local_dir: Path):
 
     try:
         # 拉取更新
-        origin.pull()
-        logger.info("Successfully pulled latest changes.")
+        origin.fetch()
+        logger.info("Successfully fetched latest changes.")
     except GitCommandError as gce:
         logger.error("拉取仓库 {} 时发生错误: {}", git_repo_url, gce)
 

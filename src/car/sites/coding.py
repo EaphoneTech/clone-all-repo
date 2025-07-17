@@ -4,11 +4,23 @@ from loguru import logger
 
 
 def supports(url: str) -> bool:
-    return url.startswith("coding/")
+    return (
+        url.startswith("coding/")
+        or url.startswith("https://e.coding.net/")
+        or url.startswith("git@e.coding.net:")
+    )
 
 
-def _get_coding_url(team, project, repo_name) -> str:
-    return f"https://e.coding.net/{team}/{project}/{repo_name}.git"
+def _get_url_parts(url: str) -> list[str]:
+    for prefix in ["coding/", "https://e.coding.net/", "git@e.coding.net:"]:
+        if url.startswith(prefix):
+            url = url.removeprefix(prefix)
+            break
+
+    if url.endswith(".git"):
+        url = url.removesuffix(".git")
+
+    return url.split("/")
 
 
 def get_url(url: str, verbose: bool = False) -> str:
@@ -22,8 +34,8 @@ def get_url(url: str, verbose: bool = False) -> str:
         logger.debug("repo name is: {}", url)
 
     # 根据规则, 拼装 coding 仓库的 git 地址
-    _, team, project, repo_name = url.split("/")
-    git_addr = _get_coding_url(team, project, repo_name)
+    team, project, repo_name = _get_url_parts(url)
+    git_addr = f"https://e.coding.net/{team}/{project}/{repo_name}.git"
 
     if verbose:
         logger.debug("git address for coding is: {}", git_addr)
@@ -33,6 +45,6 @@ def get_url(url: str, verbose: bool = False) -> str:
 
 def get_local_path(url: str, base_dir: Path) -> Path:
     # 根据规则, 拼装 coding 仓库的 git 地址
-    _, team, project, repo_name = url.split("/")
+    team, project, repo_name = _get_url_parts(url)
 
     return base_dir / "coding" / team / project / repo_name

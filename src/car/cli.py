@@ -20,8 +20,13 @@ REGISTRY: list = []
 def register_all_modules():
     global REGISTRY
     for module_file in (Path(__file__).parent / "sites").glob("*.py"):
-        REGISTRY.append(importlib.import_module(f"car.sites.{module_file.stem}"))
-        logger.debug("registered plugin {}", module_file.stem)
+        if module_file.stem != "url":
+            REGISTRY.append(importlib.import_module(f"car.sites.{module_file.stem}"))
+            logger.debug("registered plugin {}", module_file.stem)
+
+    # 将 url 放在最后
+    REGISTRY.append(importlib.import_module("car.sites.url"))
+    logger.debug("registered plugin {}", "url")
 
 
 def determine_site_plugin(
