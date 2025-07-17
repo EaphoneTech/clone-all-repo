@@ -19,8 +19,9 @@ REGISTRY: list = []
 # 注册所有 module
 def register_all_modules():
     global REGISTRY
-    for module_file in (Path(__file__) / "sites").glob("*.py"):
+    for module_file in (Path(__file__).parent / "sites").glob("*.py"):
         REGISTRY.append(importlib.import_module(f"car.sites.{module_file.stem}"))
+        logger.debug("registered plugin {}", module_file.stem)
 
 
 def determine_site_plugin(
@@ -36,9 +37,9 @@ def determine_site_plugin(
     """
 
     for plugin in REGISTRY:
-        get_url_func: GetUrlFunc = plugin["get_url"]
-        get_local_path_func: GetLocalPathFunc = plugin["get_local_path"]
-        supports_func: SupportsFunc = plugin["supports"]
+        get_url_func: GetUrlFunc = plugin.get_url
+        get_local_path_func: GetLocalPathFunc = plugin.get_local_path
+        supports_func: SupportsFunc = plugin.supports
         if supports_func(full_addr):
             return get_url_func(full_addr), get_local_path_func(full_addr, dest_folder)
 
@@ -54,6 +55,8 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
     # 确保目标文件夹存在
     if not dest_folder.exists():
         dest_folder.mkdir(parents=True, exist_ok=True)
+
+    register_all_modules()
 
     with open(repos_yaml_file, encoding="utf-8") as f:
         repos_dict = yaml.safe_load(f)

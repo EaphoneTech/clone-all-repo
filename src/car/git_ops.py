@@ -3,6 +3,8 @@ from pathlib import Path
 from git import GitCommandError, InvalidGitRepositoryError, Repo
 from loguru import logger
 
+PUSH_REMOTE_NAME = "push-remote"
+
 
 def update_git(git_repo_url: str, local_dir: Path):
     """将 git_repo_url 的 git 仓库 clone 到 local_dir。如果 local_dir 已经有 git 仓库，则执行 pull 操作。
@@ -19,15 +21,15 @@ def update_git(git_repo_url: str, local_dir: Path):
     except InvalidGitRepositoryError:
         # 非 Git 目录，克隆仓库
         logger.info("Cloning {} to {}", git_repo_url, local_dir)
-        Repo.clone_from(git_repo_url, local_dir)
+        Repo.clone_from(git_repo_url, local_dir, mirror=True)
         return
 
-    logger.info("Pulling latest changes for {}", git_repo_url)
+    logger.debug("Pulling latest changes for {}", git_repo_url)
 
     try:
         origin = repo.remotes.origin
         if origin.url != git_repo_url:
-            logger.warning("Remote origin URL 不一致，正在更新为: {}", git_repo_url)
+            logger.debug("将 Remote origin URL 设置为 {}", git_repo_url)
             origin.set_url(git_repo_url)
     except AttributeError:
         # 没有 origin，添加 origin 并 fetch
@@ -65,48 +67,31 @@ def push_to_remote(local_git_folder: Path, git_remote_url: str):
         git_remote_url (str): 要推送的远程仓库地址
     """
     if not local_git_folder.exists():
-        logger.error("本地仓库路径不存在: {}", local_git_folder)
+        print(f"本地仓库路径不存在: {local_git_folder}")
         return
 
     try:
         repo = Repo(local_git_folder)
     except InvalidGitRepositoryError:
-        logger.error("指定的路径不是一个 Git 仓库: {}", local_git_folder)
+        logger.info(f"指定的路径不是一个 Git 仓库: {local_git_folder}")
         return
 
-    # 确保有远程仓库
+    # 添加或更新推送远程仓库
     try:
-        origin = repo.remotes.origin
-        if origin.url != git_remote_url:
-            logger.warning("Remote origin URL 不一致，正在更新为: {}", git_remote_url)
-            origin.set_url(git_remote_url)
-    except AttributeError:
-        logger.info("添加远程仓库 origin: {}", git_remote_url)
-        origin = repo.create_remote("origin", git_remote_url)
+        push_remote = repo.remotes[PUSH_REMOTE_NAME]
+        if push_remote.url != git_remote_url:
+            logger.debug("将 {} 的 url 更新为 {}", PUSH_REMOTE_NAME, git_remote_url)
+            push_remote.set_url(git_remote_url)
+    except IndexError:
+        logger.debug("添加远程仓库 {} 为 {}", PUSH_REMOTE_NAME, git_remote_url)
+        push_remote = repo.create_remote(PUSH_REMOTE_NAME, git_remote_url)
 
-    # 获取所有本地分支
-    local_branches = [head.name for head in repo.heads]
-
-    # 获取所有远程分支
-    origin.fetch()
-    remote_branches = [ref.name for ref in origin.refs]
-
-    # 推送所有本地分支
-    for branch in local_branches:
-        remote_name = f"refs/heads/{branch}"
-        if remote_name in remote_branches:
-            logger.info("更新远程分支: {}", branch)
-        else:
-            logger.info("推送新分支: {}", branch)
-        origin.push(refspec=f"refs/heads/{branch}:{remote_name}")
-
-    # 推送所有标签
-    tags = [tag.name for tag in repo.tags]
-    if tags:
-        logger.info("推送标签: {}", ", ".join(tags))
-        origin.push("--tags")
-
-    # 可选：推送所有 reflog（用于恢复历史提交）
-    # repo.git.push('--all', '--force', '--reflog', 'origin')
+    # 使用镜像推送
+    try:
+        logger.info("开始镜像推送...")
+        push_remote.push(mirror=True)
+        logger.info("镜像推送完成")
+    except Exception as e:
+        logger.info(f"镜像推送时发生错误: {e}")
 
     logger.info("成功将本地仓库推送到远程: {}", git_remote_url)
