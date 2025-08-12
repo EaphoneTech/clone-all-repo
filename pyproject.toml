@@ -12,12 +12,20 @@ dependencies = [
     "rich>=13.9.4",
 ]
 
+[project.scripts]
+clone-all-repo = "scripts/main:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ['src/car']
+
+[[tool.uv.index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
 
 [tool.ruff.lint]
 ignore = ["F821", "E501"]

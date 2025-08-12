@@ -20,7 +20,11 @@ def _get_url_parts(url: str) -> list[str]:
     if url.endswith(".git"):
         url = url.removesuffix(".git")
 
-    return url.split("/")
+    parts = url.split("/")
+    if len(parts) == 2:
+        parts.append(parts[-1])
+
+    return parts
 
 
 def get_url(url: str, verbose: bool = False) -> str:
