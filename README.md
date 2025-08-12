@@ -15,3 +15,15 @@ repos:
 - repo: coding/<coding_team_name>/<coding_project_name>/<coding_repo_name>
   to: https://xxx.xxx/xxx.git
 ```
+
+## Run with uv
+
+```bash
+$ uvx --from git+https://github.com/EaphoneTech/clone-all-repo.git clone-all-repo
+```
+
+## Install using uv
+
+```bash
+$ uv tool install --from git+https://github.com/EaphoneTech/clone-all-repo.git clone-all-repo
+```

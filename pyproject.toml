@@ -9,11 +9,11 @@ dependencies = [
     "gitpython>=3.1.44",
     "loguru>=0.7.3",
     "pyyaml>=6.0.2",
-    "rich>=13.9.4",
+    "tqdm>=4.67.1",
 ]
 
 [project.scripts]
-clone-all-repo = "scripts/main:main"
+clone-all-repo = "car.cli:click_main"
 
 [build-system]
 requires = ["hatchling"]

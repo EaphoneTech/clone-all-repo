@@ -3,9 +3,10 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+import click
 import yaml
 from loguru import logger
-from rich.progress import track
+from tqdm import tqdm
 
 from .git_ops import push_to_remote, update_git
 
@@ -67,7 +68,7 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
         repos_dict = yaml.safe_load(f)
 
     # 看一共有几个 repo
-    for repo in track(repos_dict["repos"]):
+    for repo in tqdm(repos_dict["repos"]):
         repo_url, local_path = determine_site_plugin(repo.get("repo", ""), dest_folder)
 
         if repo_url is None or local_path is None:
@@ -84,3 +85,26 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
 
             if to_url is not None:
                 push_to_remote(local_path, to_url)
+
+
+@click.command()
+@click.argument(
+    "input",
+    type=click.Path(file_okay=True, dir_okay=False, path_type=Path),
+    required=False,
+    default="repos.yaml",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    default="repos",
+)
+@click.option("--verbose", "-v", type=bool, is_flag=True, required=False, default=False)
+def click_main(
+    input: Path = Path("./repos.yaml"),
+    output_dir: Path = Path("./repos/"),
+    verbose: bool = False,
+):
+    main(input, output_dir, verbose=verbose)
