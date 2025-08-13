@@ -53,6 +53,10 @@ def determine_site_plugin(
 
 
 def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
+    # 初始化日志
+    logger.remove()
+    logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
+
     # 先读 repos.yaml
     if not repos_yaml_file.exists():
         logger.error("repos.yaml 文件不存在，请检查文件是否存在")
@@ -61,6 +65,9 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
     # 确保目标文件夹存在
     if not dest_folder.exists():
         dest_folder.mkdir(parents=True, exist_ok=True)
+        gitignore_file = dest_folder / ".gitignore"
+        if not gitignore_file.exists():
+            gitignore_file.write_text("*")
 
     register_all_modules()
 
@@ -89,7 +96,7 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
 
 @click.command()
 @click.argument(
-    "input",
+    "config_file",
     type=click.Path(file_okay=True, dir_okay=False, path_type=Path),
     required=False,
     default="repos.yaml",
@@ -100,11 +107,26 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
     type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
     required=False,
     default="repos",
+    help="本地 git 仓库的路径",
+    show_default=True,
 )
-@click.option("--verbose", "-v", type=bool, is_flag=True, required=False, default=False)
+@click.option(
+    "--verbose",
+    "-v",
+    type=bool,
+    is_flag=True,
+    required=False,
+    default=False,
+    help="是否打印更详细的日志",
+    show_default=True,
+)
 def click_main(
-    input: Path = Path("./repos.yaml"),
+    config_file: Path = Path("./repos.yaml"),
     output_dir: Path = Path("./repos/"),
     verbose: bool = False,
 ):
-    main(input, output_dir, verbose=verbose)
+    """批量 clone 和 push git 仓库
+
+    CONFIG_FILE 默认是 repos.yaml
+    """
+    main(config_file, output_dir, verbose=verbose)

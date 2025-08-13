@@ -88,9 +88,9 @@ def push_to_remote(local_git_folder: Path, git_remote_url: str):
 
     # 使用镜像推送
     try:
-        logger.info("开始镜像推送...")
+        logger.debug("开始镜像推送...")
         push_remote.push(mirror=True)
-        logger.info("镜像推送完成")
+        logger.debug("镜像推送完成")
     except Exception as e:
         logger.info(f"镜像推送时发生错误: {e}")
 
