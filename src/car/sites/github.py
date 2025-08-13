@@ -37,6 +37,9 @@ def get_url(url: str, verbose: bool = False) -> str:
     org_name, repo_name = _get_url_parts(url)
     git_addr = f"https://github.com/{org_name}/{repo_name}.git"
 
+    if url.startswith("git@github.com:"):
+        git_addr = url
+
     if verbose:
         logger.debug("git address for github is: {}", git_addr)
 
