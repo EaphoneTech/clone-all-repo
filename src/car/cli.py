@@ -1,6 +1,8 @@
+import concurrent.futures
 import importlib
 import sys
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 
 import click
@@ -52,10 +54,38 @@ def determine_site_plugin(
     return None, None
 
 
-def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
+def process_single_repo(repo_config: dict, dest_folder: Path):
+    """处理单个仓库的函数，用于并行执行"""
+    repo_url, local_path = determine_site_plugin(
+        repo_config.get("repo", ""), dest_folder
+    )
+
+    if repo_url is None or local_path is None:
+        return
+
+    # 首先更新本地 git 仓库
+    update_git(repo_url, local_path)
+
+    # 其次，如果有 to 的话，还要推给 to
+    to = repo_config.get("to")
+    if to is not None:
+        to_url, _ = determine_site_plugin(to, dest_folder)
+
+        if to_url is not None:
+            push_to_remote(local_path, to_url)
+
+
+def main(
+    repos_yaml_file: Path,
+    dest_folder: Path,
+    parallel: int = 1,
+    progress: bool = True,
+    verbose: bool = False,
+):
     # 初始化日志
-    logger.remove()
-    logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
+    if progress:
+        logger.remove()
+        logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
 
     # 先读 repos.yaml
     if not repos_yaml_file.exists():
@@ -74,24 +104,21 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
     with open(repos_yaml_file, encoding="utf-8") as f:
         repos_dict = yaml.safe_load(f)
 
-    # 看一共有几个 repo
-    for repo in tqdm(repos_dict["repos"]):
-        repo_url, local_path = determine_site_plugin(repo.get("repo", ""), dest_folder)
+    # 创建处理单个仓库的函数
+    process_repo_partial = partial(process_single_repo, dest_folder=dest_folder)
 
-        if repo_url is None or local_path is None:
-            continue
+    # 使用线程池并行处理
+    with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
+        gen = executor.map(process_repo_partial, repos_dict["repos"])
 
-        # 首先更新本地 git 仓库
-        update_git(repo_url, local_path)
+        if progress:
+            gen = tqdm(
+                gen,
+                total=len(repos_dict["repos"]),
+                desc="Processing repositories",
+            )
 
-        # 其次，如果有 to 的话，还要推给 to
-
-        to = repo.get("to")
-        if to is not None:
-            to_url, _ = determine_site_plugin(to, dest_folder)
-
-            if to_url is not None:
-                push_to_remote(local_path, to_url)
+        list(gen)
 
 
 @click.command()
@@ -111,6 +138,24 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
     show_default=True,
 )
 @click.option(
+    "--parallel",
+    "-p",
+    type=int,
+    required=False,
+    default=1,
+    help="并行处理的数量",
+    show_default=True,
+)
+@click.option(
+    "--progress/--no-progress",
+    type=bool,
+    is_flag=True,
+    required=False,
+    default=True,
+    help="是否显示进度条",
+    show_default=True,
+)
+@click.option(
     "--verbose",
     "-v",
     type=bool,
@@ -123,10 +168,12 @@ def main(repos_yaml_file: Path, dest_folder: Path, verbose: bool = False):
 def click_main(
     config_file: Path = Path("./repos.yaml"),
     output_dir: Path = Path("./repos/"),
+    parallel: int = 1,
+    progress: bool = True,
     verbose: bool = False,
 ):
     """批量 clone 和 push git 仓库
 
     CONFIG_FILE 默认是 repos.yaml
     """
-    main(config_file, output_dir, verbose=verbose)
+    main(config_file, output_dir, parallel=parallel, progress=progress, verbose=verbose)
