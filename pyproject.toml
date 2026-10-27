@@ -1,15 +1,15 @@
 [project]
 name = "clone-all-repo"
-version = "0.2.0"
+version = "0.3.0"
 description = "Clone all git repos from repos.yaml"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "click>=8.1.8",
-    "gitpython>=3.1.44",
+    "click>=8.3",
+    "gitpython>=3.2",
     "loguru>=0.7.3",
     "pyyaml>=6.0.2",
-    "tqdm>=4.67.1",
+    "tqdm>=4.68",
 ]
 
 [project.scripts]

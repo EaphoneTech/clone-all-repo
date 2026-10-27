@@ -12,4 +12,6 @@ RUN uv tool install --from git+https://github.com/EaphoneTech/clone-all-repo.git
 
 ENV PATH="/root/.local/bin:$PATH"
 
-CMD [ "clone-all-repo" ]
+ENTRYPOINT [ "clone-all-repo" ]
+# 留空 CMD 以便运行时追加参数, 例如: docker run <image> -p 4
+CMD []
