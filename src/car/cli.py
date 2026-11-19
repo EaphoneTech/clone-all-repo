@@ -131,6 +131,11 @@ def _as_bool(value: object) -> bool:
     return bool(value)
 
 
+def _is_skipped(repo_config: dict) -> bool:
+    """判断单个仓库是否被标记为 skip: true。"""
+    return _as_bool(repo_config.get("skip", False))
+
+
 def _env_flag(name: str) -> bool | None:
     """读取布尔型环境变量, 未设置时返回 None。"""
     raw = os.environ.get(name)
@@ -174,7 +179,14 @@ def main(
         repos_dict = yaml.safe_load(f) or {}
 
     defaults = repos_dict.get("defaults") or {}
-    repos = repos_dict.get("repos") or []
+    active_repos: list[dict] = []
+    skipped = 0
+    for repo in repos_dict.get("repos") or []:
+        if _is_skipped(repo):
+            logger.info("跳过仓库 (skip=true): {}", repo.get("repo", "<unknown>"))
+            skipped += 1
+            continue
+        active_repos.append(repo)
 
     # 初始化日志
     show_progress = _resolve_progress(progress, defaults)
@@ -193,7 +205,7 @@ def main(
 
     workers = _resolve_parallel(parallel, defaults)
 
-    logger.debug("使用 {} 个并发处理 {} 个仓库", workers, len(repos))
+    logger.debug("使用 {} 个并发处理 {} 个仓库", workers, len(active_repos))
     if not show_progress:
         logger.debug("进度条已关闭")
 
@@ -204,12 +216,12 @@ def main(
 
     # 使用线程池并行处理
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        gen = executor.map(process_repo_partial, repos)
+        gen = executor.map(process_repo_partial, active_repos)
 
         if show_progress:
             gen = tqdm(
                 gen,
-                total=len(repos),
+                total=len(active_repos),
                 desc="Processing repositories",
             )
 
@@ -225,7 +237,7 @@ def main(
         )
         sys.exit(1)
 
-    logger.info("全部 {} 个仓库同步完成", len(results))
+    logger.info("全部 {} 个仓库同步完成 (跳过 {} 个)", len(results), skipped)
 
 
 @click.command()

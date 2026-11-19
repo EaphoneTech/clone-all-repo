@@ -58,9 +58,14 @@ repos:
 
 - repo: coding/<coding_team_name>/<coding_project_name>/<coding_repo_name>
   to: https://xxx.xxx/xxx.git
+
+# 临时跳过: 保留配置但不抓取/推送
+- repo: github/<org>/<paused_repo>
+  skip: true
 ```
 
-All `repo` s in the `repos` section will be `git clone`d to local.
+All `repo` s in the `repos` section will be `git clone`d to local, except those
+marked with `skip: true`.
 
 Any repo with `to` will be `git push`ed to specified remote.
 
@@ -93,6 +98,15 @@ refs:
 
 `branches: all` 不包含 `refs/pull/*`。推送前会先 `ls-remote` 对账, 只推远端
 缺失或落后的 ref, 因此失败后重跑会接着上次的进度继续。
+
+### 跳过仓库
+
+单个仓库设置 `skip: true` 后, 该仓库不会被抓取或推送, 也不计入进度条和同步
+结果。适用于定期重新生成 `repos.yaml` 的场景: 直接删掉的仓库下次生成时会
+重新出现, 标记为 `skip: true` 则会一直保留在配置里。
+
+`skip` 只作用于当前仓库, 不从 `defaults` 继承; 布尔取值规则与其它配置一致,
+`"false"` / `"0"` / `"no"` / `"off"` / 空字符串都视为 false。
 
 ## How to use
 
